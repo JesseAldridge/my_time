@@ -73,7 +73,7 @@ for line in lines[::-1]:
 
 print 'category_to_hours:', sorted(category_to_hours.iteritems(), key=lambda x: x[-1])
 total_hours = sum(category_to_hours.values())
-for category, value in category_to_hours.iteritems():
+for category, value in sorted(category_to_hours.iteritems(), key=lambda t: t[1]):
   percent_line = str(int(round(value / total_hours * 100))) + '%', category, value
   fixed_lines.append('-- {}'.format(percent_line))
   print percent_line

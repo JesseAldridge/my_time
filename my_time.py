@@ -36,24 +36,21 @@ for line in lines[::-1]:
 
     # Parse date
 
-    vals = re.split(';|,', line)
+    vals = [s for s in re.split(';|,', line)]
     print 'vals:', vals
+
     date_str = vals[0]
     month, date = (int(s) for s in date_str.split('/'))
-    if month == 1:
-      if not incremented_year:
-        year += 1
-        incremented_year = True
-    else:
-      incremented_year = False
+    if month == 1 and date == 1:
+      year += 1
     dates.append(datetime.datetime(year, month, date))
 
     # Parse job values
 
     job_vals = vals[2:]
-    curr_categories = [re.sub('[0-9\.]+( hours?)?', '', job_val).strip() for job_val in job_vals]
+    categories = [re.sub('[0-9\.]+( hours?)?', '', job_val).strip() for job_val in job_vals]
     hours_list = [float(re.search('[0-9\.]+', s).group()) for s in job_vals]
-    for category, hours in zip(curr_categories, hours_list):
+    for category, hours in zip(categories, hours_list):
       if not category:
         continue
       if category not in CATEGORIES:

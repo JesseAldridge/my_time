@@ -18,6 +18,7 @@ year = 2016
 goal_hours_per_day = 9  # 9 * 7 = 63 hours per week
 incremented_year = False
 category_to_hours = {}
+daily_category_to_hours = []
 daily_hours = []
 normal_line_count = 0
 
@@ -50,6 +51,7 @@ for line in lines[::-1]:
     job_vals = vals[2:]
     categories = [re.sub('[0-9\.]+( hours?)?', '', job_val).strip() for job_val in job_vals]
     hours_list = [float(re.search('[0-9\.]+', s).group()) for s in job_vals]
+    category_to_hours_today = {}
     for category, hours in zip(categories, hours_list):
       if not category:
         continue
@@ -57,6 +59,9 @@ for line in lines[::-1]:
         raise Exception("Job not matched: " + category)
       category_to_hours.setdefault(category, 0)
       category_to_hours[category] += hours
+      category_to_hours_today.setdefault(category, 0)
+      category_to_hours_today[category] += hours
+    daily_category_to_hours.append(category_to_hours_today)
     budget += sum(hours_list) - goal_hours_per_day
     fixed_line = '; '.join([str(x).strip() for x in [date_str, budget] + job_vals])
     fixed_lines.append(fixed_line)
@@ -93,10 +98,30 @@ for i, line in enumerate(fixed_lines):
 with open(path, 'w') as f:
   f.write('\n'.join(fixed_lines))
 
-easygraph.graph(zip(dates, budget_vals), show_lines=True,
-                labels=[line for line in fixed_lines[::-1] if re.search('^[0-9]', line)])
-# easygraph.graph(zip(dates, daily_hours), show_lines=True, labels=fixed_lines)
-# easygraph.graph(
-#   zip([dates[i] for i in range(0, len(dates), 7)][:-1],
-#       [sum(daily_hours[i:i + 7]) for i in range(0, len(daily_hours), 7)][:-1]),
-#   show_lines=True, labels=fixed_lines)
+easygraph.html('<p>Time budget</p>')
+
+labels = [line for line in fixed_lines[::-1] if re.match('^[0-9]', line)]
+easygraph.graph(zip(dates, budget_vals), show_lines=True, labels=labels)
+
+easygraph.html('<p>Hours per day</p>')
+easygraph.graph(zip(dates, daily_hours), show_lines=True, labels=labels)
+
+easygraph.html('<p>Hours per week</p>')
+easygraph.graph(
+  zip([dates[i] for i in range(0, len(dates), 7)],
+      [sum(daily_hours[i:i + 7]) for i in range(0, len(daily_hours), 7)]),
+  show_lines=True, labels=[labels[i] for i in range(0, len(dates), 7)])
+
+
+for category in category_to_hours.keys():
+  easygraph.html('<p>{} per day</p>'.format(category))
+  daily_cat_hours = [cat_to_hours.get(category, 0) for cat_to_hours in daily_category_to_hours]
+  easygraph.graph(zip(dates, daily_cat_hours), show_lines=True, labels=labels)
+
+  easygraph.html('<p>{} per week</p>'.format(category))
+
+  # last bucket will only be partially filled
+  easygraph.graph(
+    zip([dates[i] for i in range(0, len(dates), 7)],
+        [sum(daily_cat_hours[i - 7:i]) for i in range(0, len(daily_cat_hours), 7)]),
+    show_lines=True, labels=[labels[i] for i in range(0, len(dates), 7)])
